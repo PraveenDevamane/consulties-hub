@@ -32,6 +32,25 @@ export default function AddBusiness() {
     fetchCategories();
   }, [user, navigate]);
 
+  useEffect(() => {
+    // Redirect non-publishers back to publisher dashboard which shows guidance
+    const checkRole = async () => {
+      if (!user) return;
+      try {
+        const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
+        if (error || data?.role !== 'publisher') {
+          // not a publisher — send back to publisher landing screen
+          navigate('/publisher/dashboard');
+        }
+      } catch (err) {
+        console.error('Role check failed:', err);
+        navigate('/publisher/dashboard');
+      }
+    };
+
+    checkRole();
+  }, [user, navigate]);
+
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
@@ -58,26 +77,57 @@ export default function AddBusiness() {
     const imageUrl = formData.get('image_url') as string;
     const lat = formData.get('lat') as string;
     const lng = formData.get('lng') as string;
-
-    const { error } = await supabase.from('businesses').insert({
-      publisher_id: user.id,
-      name,
-      category_id: selectedCategory,
-      description,
-      image_url: imageUrl || null,
-      lat: lat ? parseFloat(lat) : null,
-      lng: lng ? parseFloat(lng) : null,
-    });
-
-    if (error) {
-      toast.error('Failed to add business. Please try again.');
-      console.error('Error adding business:', error);
-    } else {
-      toast.success('Business added successfully!');
-      navigate('/publisher/dashboard');
+    // basic client validation
+    if (!selectedCategory) {
+      toast.error('Please select a category');
+      setLoading(false);
+      return;
     }
 
-    setLoading(false);
+    try {
+      // ensure user has publisher role (RLS requires it)
+      const { data: roleData, error: roleErr } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', user.id)
+        .single();
+
+      if (roleErr) {
+        console.error('Error fetching user role:', roleErr);
+      }
+
+      if (roleData?.role !== 'publisher') {
+        toast.error('You must be a publisher to add a business. Please sign up / request publisher access.');
+        setLoading(false);
+        return;
+      }
+
+      const payload = {
+        publisher_id: user.id,
+        name,
+        category_id: selectedCategory,
+        description,
+        image_url: imageUrl || null,
+        lat: lat ? parseFloat(lat) : null,
+        lng: lng ? parseFloat(lng) : null,
+      } as any;
+
+      const { data: inserted, error } = await supabase.from('businesses').insert(payload).select().single();
+
+      if (error) {
+        console.error('Error adding business:', error);
+        toast.error(error.message || 'Failed to add business. Please try again.');
+      } else {
+        toast.success('Business added successfully!');
+        // navigate to publisher dashboard — the new business will be available for users after DB commit
+        navigate('/publisher/dashboard');
+      }
+    } catch (err: any) {
+      console.error('Unexpected error adding business:', err);
+      toast.error(err?.message || 'Failed to add business. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

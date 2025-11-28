@@ -3,6 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, MapPin, Star, Calendar, LogOut } from 'lucide-react';
 
@@ -20,6 +22,9 @@ export default function UserDashboard() {
   const navigate = useNavigate();
   const [businesses, setBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const categoriesNav = ['RESTAURANT', 'HOTELS', 'NEWS', 'FOOTWEAR', 'ETC'];
+  const [searchLoading, setSearchLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -29,6 +34,41 @@ export default function UserDashboard() {
 
     fetchBusinesses();
   }, [user, navigate]);
+
+  // fetch businesses based on search query (debounced)
+  useEffect(() => {
+    let timer: any = null;
+    const doSearch = async () => {
+      setSearchLoading(true);
+      try {
+        const q = searchQuery?.trim();
+        let query = supabase.from('businesses').select('*, categories(name)').order('created_at', { ascending: false }).limit(12);
+        if (q && q.length > 0) {
+          // use ilike for case-insensitive partial match
+          query = supabase.from('businesses').select('*, categories(name)').ilike('name', `%${q}%`).order('created_at', { ascending: false }).limit(50);
+        }
+
+        const { data, error } = await query;
+        if (error) {
+          console.error('Search error:', error);
+        } else {
+          setBusinesses(data || []);
+        }
+      } catch (err) {
+        console.error('Unexpected search error:', err);
+      } finally {
+        setSearchLoading(false);
+      }
+    };
+
+    // debounce by 350ms
+    timer = setTimeout(() => {
+      doSearch();
+    }, 350);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery]);
 
   const fetchBusinesses = async () => {
     const { data, error } = await supabase
@@ -72,6 +112,47 @@ export default function UserDashboard() {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
+        {/* Search / Voice input */}
+        <div className="max-w-3xl mx-auto mb-6">
+          <div className="flex items-center gap-2">
+            <Input
+              placeholder="Search — find anything"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <Button
+              variant="outline"
+              onClick={() => {
+                const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+                if (!SpeechRecognition) {
+                  toast('Voice search not supported in this browser');
+                  return;
+                }
+                const rec = new SpeechRecognition();
+                rec.lang = 'en-US';
+                rec.onresult = (ev: any) => {
+                  const transcript = ev.results[0][0].transcript;
+                  setSearchQuery(transcript);
+                };
+                rec.onerror = () => toast('Voice recognition failed');
+                rec.start();
+              }}
+            >
+              🎤
+            </Button>
+          </div>
+
+          {/* Category horizontal nav */}
+          <div className="mt-4 overflow-x-auto py-2">
+            <div className="flex gap-3">
+              {categoriesNav.map((c) => (
+                <Button key={c} variant="ghost" className="rounded-full px-4 py-2 font-semibold" onClick={() => navigate('/user/categories')}>
+                  {c}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </div>
         {/* Quick Actions */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
           <Card className="hover:shadow-card transition-all cursor-pointer" onClick={() => navigate('/user/categories')}>
@@ -107,7 +188,7 @@ export default function UserDashboard() {
         {/* Featured Businesses */}
         <h2 className="text-3xl font-bold mb-6">Featured Businesses</h2>
         <div className="grid md:grid-cols-3 gap-6">
-          {loading ? (
+          {loading || searchLoading ? (
             <p className="text-muted-foreground">Loading businesses...</p>
           ) : businesses.length === 0 ? (
             <p className="text-muted-foreground">No businesses found</p>

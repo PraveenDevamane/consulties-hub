@@ -10,9 +10,14 @@ import { toast } from 'sonner';
 import { Building2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
+import { useLocation } from 'react-router-dom';
+
 export default function Auth() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [loading, setLoading] = useState(false);
+  const params = new URLSearchParams(location.search);
+  const defaultRole = params.get('role') || 'user';
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -82,16 +87,30 @@ export default function Auth() {
     }
 
     if (data.user) {
-      // Add publisher role if selected
+      // Try to add publisher role if selected. Note: DB may require admin approval (RLS).
       if (role === 'publisher') {
-        await supabase.from('user_roles').insert({
-          user_id: data.user.id,
-          role: 'publisher',
-        });
+        try {
+          const { error: insertErr } = await supabase.from('user_roles').insert({
+            user_id: data.user.id,
+            role: 'publisher',
+          });
+          if (insertErr) {
+            console.warn('Could not auto-assign publisher role:', insertErr);
+            toast.success('Account created! Publisher access requires approval. Please request access or contact support.');
+            navigate('/publisher/dashboard');
+            setLoading(false);
+            return;
+          }
+        } catch (err) {
+          console.warn('Publisher role assignment failed:', err);
+          toast.success('Account created! Publisher access requires approval. Please request access or contact support.');
+          navigate('/publisher/dashboard');
+          setLoading(false);
+          return;
+        }
       }
 
       toast.success('Account created! Please check your email for confirmation.');
-      
       // Redirect based on role
       if (role === 'publisher') {
         navigate('/publisher/dashboard');
@@ -192,7 +211,7 @@ export default function Auth() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="signup-role">Account Type</Label>
-                  <Select name="role" defaultValue="user">
+                  <Select name="role" defaultValue={defaultRole}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>

@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import BusinessCard from '@/components/BusinessCard';
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Building2, ArrowLeft } from 'lucide-react';
 
@@ -17,6 +19,8 @@ interface Business {
   description: string;
   rating: number;
   image_url: string | null;
+  lat?: number | null;
+  lng?: number | null;
   categories: { name: string };
 }
 
@@ -26,7 +30,9 @@ export default function Categories() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [businesses, setBusinesses] = useState<Business[]>([]);
+  const [sortedBusinesses, setSortedBusinesses] = useState<Business[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortOption, setSortOption] = useState<'near' | 'rating' | 'nonbusy'>('rating');
 
   useEffect(() => {
     fetchCategories();
@@ -37,6 +43,12 @@ export default function Categories() {
       fetchBusinessesByCategory(selectedCategory);
     }
   }, [selectedCategory]);
+
+  useEffect(() => {
+    // apply client-side sorting whenever businesses or sortOption changes
+    applySorting(businesses, sortOption);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businesses, sortOption]);
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
@@ -66,6 +78,45 @@ export default function Categories() {
       setBusinesses(data || []);
     }
     setLoading(false);
+  };
+
+  const haversineDistance = (lat1?: number | null, lon1?: number | null, lat2?: number | null, lon2?: number | null) => {
+    if (!lat1 || !lon1 || !lat2 || !lon2) return Number.MAX_VALUE;
+    const toRad = (v: number) => (v * Math.PI) / 180;
+    const R = 6371; // km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
+
+  const applySorting = (list: Business[], option: typeof sortOption) => {
+    if (!list) return setSortedBusinesses([]);
+
+    if (option === 'rating') {
+      setSortedBusinesses([...list].sort((a, b) => b.rating - a.rating));
+    } else if (option === 'nonbusy') {
+      // no real traffic data — keep order but could be extended
+      setSortedBusinesses([...list]);
+    } else if (option === 'near') {
+      if (!navigator.geolocation) {
+        setSortedBusinesses([...list]);
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const { latitude, longitude } = pos.coords;
+          const sorted = [...list].sort((a, b) => {
+            const da = haversineDistance(latitude, longitude, a.lat, a.lng);
+            const db = haversineDistance(latitude, longitude, b.lat, b.lng);
+            return da - db;
+          });
+          setSortedBusinesses(sorted);
+        },
+        () => setSortedBusinesses([...list]),
+      );
+    }
   };
 
   return (
@@ -120,9 +171,23 @@ export default function Categories() {
         {/* Businesses List */}
         {selectedCategory && (
           <div>
-            <h2 className="text-2xl font-bold mb-6">
-              {categories.find((c) => c.category_id === selectedCategory)?.name} Businesses
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold">
+                {categories.find((c) => c.category_id === selectedCategory)?.name} Businesses
+              </h2>
+              <div className="w-56">
+                <Select value={sortOption} onValueChange={(v) => setSortOption(v as any)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={sortOption === 'near' ? 'Near to you' : sortOption === 'rating' ? 'Ratings' : 'Non-Busy'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="near">Near to You</SelectItem>
+                    <SelectItem value="rating">Ratings</SelectItem>
+                    <SelectItem value="nonbusy">Non-Busy</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {loading ? (
               <p className="text-muted-foreground">Loading businesses...</p>
             ) : businesses.length === 0 ? (
@@ -133,35 +198,11 @@ export default function Categories() {
               </Card>
             ) : (
               <div className="grid md:grid-cols-3 gap-6">
-                {businesses.map((business) => (
-                  <Card key={business.business_id} className="hover:shadow-card transition-all overflow-hidden">
-                    <div className="h-48 bg-muted">
-                      {business.image_url ? (
-                        <img
-                          src={business.image_url}
-                          alt={business.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Building2 className="h-16 w-16 text-muted-foreground" />
-                        </div>
-                      )}
+                  {sortedBusinesses.map((business) => (
+                    <div key={business.business_id}>
+                      <BusinessCard business={business} />
                     </div>
-                    <CardHeader>
-                      <CardTitle>{business.name}</CardTitle>
-                      <CardDescription>Rating: {business.rating.toFixed(1)} ⭐</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                        {business.description}
-                      </p>
-                      <Button variant="outline" className="w-full" asChild>
-                        <Link to={`/business/${business.business_id}`}>View Details</Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                ))}
+                  ))}
               </div>
             )}
           </div>
