@@ -14,16 +14,217 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      advertisements: {
+        Row: {
+          ad_id: string
+          created_at: string
+          image_url: string | null
+          publisher_id: string
+          title: string
+        }
+        Insert: {
+          ad_id?: string
+          created_at?: string
+          image_url?: string | null
+          publisher_id: string
+          title: string
+        }
+        Update: {
+          ad_id?: string
+          created_at?: string
+          image_url?: string | null
+          publisher_id?: string
+          title?: string
+        }
+        Relationships: []
+      }
+      businesses: {
+        Row: {
+          business_id: string
+          category_id: string | null
+          created_at: string
+          description: string | null
+          image_url: string | null
+          lat: number | null
+          lng: number | null
+          name: string
+          publisher_id: string
+          rating: number | null
+        }
+        Insert: {
+          business_id?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          image_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          name: string
+          publisher_id: string
+          rating?: number | null
+        }
+        Update: {
+          business_id?: string
+          category_id?: string | null
+          created_at?: string
+          description?: string | null
+          image_url?: string | null
+          lat?: number | null
+          lng?: number | null
+          name?: string
+          publisher_id?: string
+          rating?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "businesses_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["category_id"]
+          },
+        ]
+      }
+      categories: {
+        Row: {
+          category_id: string
+          created_at: string
+          name: string
+        }
+        Insert: {
+          category_id?: string
+          created_at?: string
+          name: string
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      feedback: {
+        Row: {
+          business_id: string
+          comment: string | null
+          created_at: string
+          feedback_id: string
+          rating: number | null
+          user_id: string
+        }
+        Insert: {
+          business_id: string
+          comment?: string | null
+          created_at?: string
+          feedback_id?: string
+          rating?: number | null
+          user_id: string
+        }
+        Update: {
+          business_id?: string
+          comment?: string | null
+          created_at?: string
+          feedback_id?: string
+          rating?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_business_id_fkey"
+            columns: ["business_id"]
+            isOneToOne: false
+            referencedRelation: "businesses"
+            referencedColumns: ["business_id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          name: string
+          phone: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          name: string
+          phone?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          phone?: string | null
+        }
+        Relationships: []
+      }
+      service_bookings: {
+        Row: {
+          booking_id: string
+          created_at: string
+          details: string | null
+          service_type: string
+          status: string | null
+          user_id: string
+        }
+        Insert: {
+          booking_id?: string
+          created_at?: string
+          details?: string | null
+          service_type: string
+          status?: string | null
+          user_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          details?: string | null
+          service_type?: string
+          status?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "publisher" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +351,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "publisher", "admin"],
+    },
   },
 } as const
