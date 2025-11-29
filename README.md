@@ -11,6 +11,8 @@ This repository contains ConsultiesHub — a local business directory and publis
 This README documents the features implemented so far, how to run the app locally, how to seed sample data, and a brief note about Supabase Row-Level Security and publisher roles.
 
 ## Implemented features (high level)
+This project is called COnsulties HUb using react tailwindcss,typescript 
+Simply visit the [Lovable Project](https://lovable.dev/projects/0195ab85-9ae7-4d5b-86c1-2078e275a173) and start prompting.
 
 - Split entry / Landing screen with two flows: "Login as User" and "Login as Publisher".
 - Authentication and role-aware redirects (sign up can request the publisher role).
