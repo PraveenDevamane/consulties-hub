@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, MapPin, Star, Calendar, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Building2, MapPin, Star, Calendar, Mic } from 'lucide-react';
+import UserMenu from '@/components/UserMenu';
 
 interface Business {
   business_id: string;
@@ -91,21 +93,27 @@ export default function UserDashboard() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-[#C9F9D6] to-[#9198E5]">
       {/* Navigation */}
-      <nav className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
-              <Building2 className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">ConsultiesHub</span>
-            </Link>
-            <div className="flex items-center gap-4">
-              <span className="text-muted-foreground">Welcome, {user?.email}</span>
-              <Button variant="ghost" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
+            <div className="flex items-center gap-3">
+              <Avatar>
+                {user?.user_metadata?.avatar_url ? (
+                  <AvatarImage src={user.user_metadata.avatar_url} alt={user.email || 'Profile'} />
+                ) : (
+                  <AvatarFallback>{user?.email?.charAt(0).toUpperCase() || 'U'}</AvatarFallback>
+                )}
+              </Avatar>
+              <Link to="/user/dashboard" className="flex items-center gap-2">
+                <Building2 className="h-8 w-8 text-primary" />
+                <span className="text-2xl font-bold font-serif">ConsultiesHub</span>
+              </Link>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="hidden sm:inline text-sm font-serif">WELCOME</span>
+              <UserMenu />
             </div>
           </div>
         </div>
@@ -116,12 +124,15 @@ export default function UserDashboard() {
         <div className="max-w-3xl mx-auto mb-6">
           <div className="flex items-center gap-2">
             <Input
-              placeholder="Search — find anything"
+              className="bg-white rounded-full border-2"
+              placeholder="🔍 Search — find anything"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
             <Button
               variant="outline"
+              size="icon"
+              className="rounded-full bg-white"
               onClick={() => {
                 const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
                 if (!SpeechRecognition) {
@@ -138,7 +149,7 @@ export default function UserDashboard() {
                 rec.start();
               }}
             >
-              🎤
+              <Mic className="h-5 w-5" />
             </Button>
           </div>
 
@@ -146,7 +157,12 @@ export default function UserDashboard() {
           <div className="mt-4 overflow-x-auto py-2">
             <div className="flex gap-3">
               {categoriesNav.map((c) => (
-                <Button key={c} variant="ghost" className="rounded-full px-4 py-2 font-semibold" onClick={() => navigate('/user/categories')}>
+                <Button 
+                  key={c} 
+                  variant="outline" 
+                  className="rounded-full px-6 py-2 font-serif bg-white border-2 hover:bg-primary/10 whitespace-nowrap" 
+                  onClick={() => navigate('/user/categories')}
+                >
                   {c}
                 </Button>
               ))}
@@ -155,38 +171,38 @@ export default function UserDashboard() {
         </div>
         {/* Quick Actions */}
         <div className="grid md:grid-cols-4 gap-4 mb-8">
-          <Card className="hover:shadow-card transition-all cursor-pointer" onClick={() => navigate('/user/categories')}>
+          <Card className="hover:shadow-lg transition-all cursor-pointer bg-white/90 backdrop-blur-sm rounded-3xl border-2" onClick={() => navigate('/user/categories')}>
             <CardHeader>
               <MapPin className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Browse Businesses</CardTitle>
+              <CardTitle className="font-serif">Browse Businesses</CardTitle>
               <CardDescription>Explore local businesses</CardDescription>
             </CardHeader>
           </Card>
-          <Card className="hover:shadow-card transition-all cursor-pointer" onClick={() => navigate('/user/bookings')}>
+          <Card className="hover:shadow-lg transition-all cursor-pointer bg-white/90 backdrop-blur-sm rounded-3xl border-2" onClick={() => navigate('/user/bookings')}>
             <CardHeader>
               <Calendar className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>My Bookings</CardTitle>
+              <CardTitle className="font-serif">My Bookings</CardTitle>
               <CardDescription>View your service bookings</CardDescription>
             </CardHeader>
           </Card>
-          <Card className="hover:shadow-card transition-all cursor-pointer" onClick={() => navigate('/user/feedback')}>
+          <Card className="hover:shadow-lg transition-all cursor-pointer bg-white/90 backdrop-blur-sm rounded-3xl border-2" onClick={() => navigate('/user/feedback')}>
             <CardHeader>
               <Star className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>My Reviews</CardTitle>
+              <CardTitle className="font-serif">My Reviews</CardTitle>
               <CardDescription>Manage your feedback</CardDescription>
             </CardHeader>
           </Card>
-          <Card className="hover:shadow-card transition-all cursor-pointer" onClick={() => navigate('/services')}>
+          <Card className="hover:shadow-lg transition-all cursor-pointer bg-white/90 backdrop-blur-sm rounded-3xl border-2" onClick={() => navigate('/services')}>
             <CardHeader>
               <Building2 className="h-8 w-8 text-primary mb-2" />
-              <CardTitle>Book Services</CardTitle>
+              <CardTitle className="font-serif">Book Services</CardTitle>
               <CardDescription>Agency services</CardDescription>
             </CardHeader>
           </Card>
         </div>
 
-        {/* Featured Businesses */}
-        <h2 className="text-3xl font-bold mb-6">Featured Businesses</h2>
+        {/* Top News Feed / Featured Businesses */}
+        <h2 className="text-3xl font-bold font-serif mb-6">TOP NEWS FEED</h2>
         <div className="grid md:grid-cols-3 gap-6">
           {loading || searchLoading ? (
             <p className="text-muted-foreground">Loading businesses...</p>
@@ -194,8 +210,8 @@ export default function UserDashboard() {
             <p className="text-muted-foreground">No businesses found</p>
           ) : (
             businesses.map((business) => (
-              <Card key={business.business_id} className="hover:shadow-card transition-all overflow-hidden">
-                <div className="h-48 bg-muted">
+              <Card key={business.business_id} className="hover:shadow-lg transition-all overflow-hidden bg-white/90 backdrop-blur-sm rounded-3xl">
+                <div className="h-48 bg-gradient-to-br from-purple-200 via-pink-200 to-blue-200">
                   {business.image_url ? (
                     <img
                       src={business.image_url}
@@ -209,7 +225,7 @@ export default function UserDashboard() {
                   )}
                 </div>
                 <CardHeader>
-                  <CardTitle>{business.name}</CardTitle>
+                  <CardTitle className="font-serif">{business.name}</CardTitle>
                   <CardDescription>{business.categories?.name}</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -220,7 +236,7 @@ export default function UserDashboard() {
                   <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
                     {business.description}
                   </p>
-                  <Button variant="outline" className="w-full" asChild>
+                  <Button variant="outline" className="w-full rounded-full bg-white border-2" asChild>
                     <Link to={`/business/${business.business_id}`}>View Details</Link>
                   </Button>
                 </CardContent>

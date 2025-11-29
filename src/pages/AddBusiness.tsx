@@ -32,25 +32,6 @@ export default function AddBusiness() {
     fetchCategories();
   }, [user, navigate]);
 
-  useEffect(() => {
-    // Redirect non-publishers back to publisher dashboard which shows guidance
-    const checkRole = async () => {
-      if (!user) return;
-      try {
-        const { data, error } = await supabase.from('user_roles').select('role').eq('user_id', user.id).single();
-        if (error || data?.role !== 'publisher') {
-          // not a publisher — send back to publisher landing screen
-          navigate('/publisher/dashboard');
-        }
-      } catch (err) {
-        console.error('Role check failed:', err);
-        navigate('/publisher/dashboard');
-      }
-    };
-
-    checkRole();
-  }, [user, navigate]);
-
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from('categories')
@@ -85,23 +66,6 @@ export default function AddBusiness() {
     }
 
     try {
-      // ensure user has publisher role (RLS requires it)
-      const { data: roleData, error: roleErr } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', user.id)
-        .single();
-
-      if (roleErr) {
-        console.error('Error fetching user role:', roleErr);
-      }
-
-      if (roleData?.role !== 'publisher') {
-        toast.error('You must be a publisher to add a business. Please sign up / request publisher access.');
-        setLoading(false);
-        return;
-      }
-
       const payload = {
         publisher_id: user.id,
         name,
@@ -131,14 +95,14 @@ export default function AddBusiness() {
   };
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-[#C9F9D6] to-[#9198E5]">
       {/* Navigation */}
-      <nav className="bg-card/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
+      <nav className="bg-white/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2">
+            <Link to="/publisher/dashboard" className="flex items-center gap-2">
               <Building2 className="h-8 w-8 text-primary" />
-              <span className="text-2xl font-bold">ConsultiesHub</span>
+              <span className="text-2xl font-bold font-serif">ConsultiesHub</span>
             </Link>
             <Button variant="ghost" onClick={() => navigate('/publisher/dashboard')}>
               <ArrowLeft className="h-4 w-4 mr-2" />
@@ -149,9 +113,9 @@ export default function AddBusiness() {
       </nav>
 
       <div className="container mx-auto px-4 py-8">
-        <Card className="max-w-2xl mx-auto shadow-card">
+        <Card className="max-w-2xl mx-auto bg-white/90 backdrop-blur-sm rounded-3xl border-2">
           <CardHeader>
-            <CardTitle className="text-3xl">Add New Business</CardTitle>
+            <CardTitle className="text-3xl font-serif">Add New Business</CardTitle>
             <CardDescription>Create a new business listing on ConsultiesHub</CardDescription>
           </CardHeader>
           <CardContent>
@@ -163,6 +127,7 @@ export default function AddBusiness() {
                   name="name"
                   type="text"
                   placeholder="Enter business name"
+                  className="rounded-full"
                   required
                 />
               </div>
@@ -170,7 +135,7 @@ export default function AddBusiness() {
               <div className="space-y-2">
                 <Label htmlFor="category">Category *</Label>
                 <Select value={selectedCategory} onValueChange={setSelectedCategory} required>
-                  <SelectTrigger>
+                  <SelectTrigger className="rounded-full">
                     <SelectValue placeholder="Select a category" />
                   </SelectTrigger>
                   <SelectContent>
@@ -189,6 +154,7 @@ export default function AddBusiness() {
                   id="description"
                   name="description"
                   placeholder="Describe your business"
+                  className="rounded-2xl"
                   required
                   rows={4}
                 />
@@ -201,6 +167,7 @@ export default function AddBusiness() {
                   name="image_url"
                   type="url"
                   placeholder="https://example.com/image.jpg"
+                  className="rounded-full"
                 />
               </div>
 
@@ -213,6 +180,7 @@ export default function AddBusiness() {
                     type="number"
                     step="any"
                     placeholder="40.7128"
+                    className="rounded-full"
                   />
                 </div>
                 <div className="space-y-2">
@@ -223,6 +191,7 @@ export default function AddBusiness() {
                     type="number"
                     step="any"
                     placeholder="-74.0060"
+                    className="rounded-full"
                   />
                 </div>
               </div>
@@ -231,12 +200,12 @@ export default function AddBusiness() {
                 <Button
                   type="button"
                   variant="outline"
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                   onClick={() => navigate('/publisher/dashboard')}
                 >
                   Cancel
                 </Button>
-                <Button type="submit" className="flex-1" disabled={loading}>
+                <Button type="submit" className="flex-1 rounded-full" disabled={loading}>
                   {loading ? 'Adding...' : 'Add Business'}
                 </Button>
               </div>

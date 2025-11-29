@@ -38,21 +38,11 @@ export default function Auth() {
       return;
     }
 
-    // Fetch user role
-    const { data: roleData } = await supabase
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', data.user.id)
-      .single();
-
     toast.success('Welcome back!');
     
-    // Redirect based on role
-    if (roleData?.role === 'publisher') {
-      navigate('/publisher/dashboard');
-    } else {
-      navigate('/user/dashboard');
-    }
+    // Redirect to role selection page
+    navigate('/select-role');
+    setLoading(false);
   };
 
   const handleSignup = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -64,7 +54,6 @@ export default function Auth() {
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
     const phone = formData.get('phone') as string;
-    const role = formData.get('role') as string;
 
     const redirectUrl = `${window.location.origin}/`;
 
@@ -87,36 +76,9 @@ export default function Auth() {
     }
 
     if (data.user) {
-      // Try to add publisher role if selected. Note: DB may require admin approval (RLS).
-      if (role === 'publisher') {
-        try {
-          const { error: insertErr } = await supabase.from('user_roles').insert({
-            user_id: data.user.id,
-            role: 'publisher',
-          });
-          if (insertErr) {
-            console.warn('Could not auto-assign publisher role:', insertErr);
-            toast.success('Account created! Publisher access requires approval. Please request access or contact support.');
-            navigate('/publisher/dashboard');
-            setLoading(false);
-            return;
-          }
-        } catch (err) {
-          console.warn('Publisher role assignment failed:', err);
-          toast.success('Account created! Publisher access requires approval. Please request access or contact support.');
-          navigate('/publisher/dashboard');
-          setLoading(false);
-          return;
-        }
-      }
-
       toast.success('Account created! Please check your email for confirmation.');
-      // Redirect based on role
-      if (role === 'publisher') {
-        navigate('/publisher/dashboard');
-      } else {
-        navigate('/user/dashboard');
-      }
+      // Redirect to role selection
+      navigate('/select-role');
     }
 
     setLoading(false);
@@ -208,18 +170,6 @@ export default function Auth() {
                     required
                     minLength={6}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-role">Account Type</Label>
-                  <Select name="role" defaultValue={defaultRole}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select account type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="user">User</SelectItem>
-                      <SelectItem value="publisher">Business Publisher</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? 'Creating account...' : 'Sign Up'}

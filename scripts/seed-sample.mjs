@@ -92,8 +92,13 @@ async function main() {
   const { data: insertedBusinesses, error: insertErr } = await supabase.from('businesses').insert(payload).select('business_id, name');
   if (insertErr) {
     console.error('Failed to insert businesses:', insertErr);
+    console.error('Full error details:', JSON.stringify(insertErr, null, 2));
+    console.error('\n⚠️  ERROR: Row-Level Security is blocking the insert!');
+    console.error('Please run one of these SQL scripts in your Supabase SQL Editor:');
+    console.error('1. scripts/disable-rls-businesses.sql (Quick fix - disables RLS)');
+    console.error('2. scripts/update-rls-policies.sql (Better - updates policies)\n');
   } else {
-    console.log('Inserted businesses:', insertedBusinesses.map(b => b.name));
+    console.log('✅ Inserted businesses:', insertedBusinesses.map(b => b.name));
   }
 
   // Insert sample bookings
@@ -107,8 +112,9 @@ async function main() {
   const { data: insertedBookings, error: bookingsErr } = await supabase.from('service_bookings').insert(bookings).select('*');
   if (bookingsErr) {
     console.error('Failed to insert bookings:', bookingsErr);
+    console.error('Full error details:', JSON.stringify(bookingsErr, null, 2));
   } else {
-    console.log('Inserted bookings count:', insertedBookings.length);
+    console.log('✅ Inserted bookings count:', insertedBookings.length);
   }
 
   // Insert sample advertisements
@@ -121,11 +127,16 @@ async function main() {
   const { data: insertedAds, error: adsErr } = await supabase.from('advertisements').insert(ads).select('*');
   if (adsErr) {
     console.error('Failed to insert ads:', adsErr);
+    console.error('Full error details:', JSON.stringify(adsErr, null, 2));
   } else {
-    console.log('Inserted ads:', insertedAds.map(a => a.title));
+    console.log('✅ Inserted ads:', insertedAds.map(a => a.title));
   }
 
-  console.log('Seeding complete.');
+  console.log('\n🎉 Seeding complete.');
+  console.log('\n📝 Summary:');
+  console.log(`- Businesses: ${insertedBusinesses?.length || 0} inserted`);
+  console.log(`- Bookings: ${insertedBookings?.length || 0} inserted`);
+  console.log(`- Ads: ${insertedAds?.length || 0} inserted`);
 }
 
 main().catch((err) => {
